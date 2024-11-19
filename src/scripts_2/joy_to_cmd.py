@@ -49,13 +49,17 @@ def joy_callback(data):
         # Map joystick axes to linear and angular velocities
         if data.axes[7] != 0:  # Check if the forward/backward button is pressed
             twist.linear.x = data.axes[7]  # Use axes[7] for primary movement
+            rospy.loginfo("Axes[7]")
         else:
             twist.linear.x = data.axes[4]  # Otherwise use axes[4] for control
+            rospy.loginfo("Axes[4]")
         
         if data.axes[6] != 0:  # Check if the right/left button is pressed
             twist.angular.z = data.axes[6]  # Use axes[6] for primary turning
+            rospy.loginfo("Axes[6]")
         else:
             twist.angular.z = data.axes[3]  # Otherwise use axes[3] for control
+            rospy.loginfo("Axes[3]")
     else:
         # Apply the current velocity set by the button presses
         twist.linear.x = current_velocity
@@ -65,8 +69,8 @@ def joy_callback(data):
     cmd_vel_pub.publish(twist)
     
     # If axes are moved, re-enable manual control
-    if data.axes[7] != 0 or data.axes[4] != 0 or data.axes[6] != 0 or data.axes[3] != 0:
-        rospy.loginfo("Manual control re-activated via joystick movement")
+    if data.axes[7] != 0 or data.axes[6] != 0 or data.axes[4] != 0 or data.axes[3] != 0:
+        # rospy.loginfo("Manual control re-activated via joystick movement")
         manual_control = True
 
 def joy_to_cmd_vel():
@@ -82,7 +86,7 @@ def joy_to_cmd_vel():
     ########################### Adding this part For Continuous Publishing the topic ######################
     while not rospy.is_shutdown():
         cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)  # Create a publisher for the /cmd_vel topic
-        rospy.sleep(0.05)
+        rospy.sleep(1)
     ########################################################################################################
     ########################################################################################################
 
