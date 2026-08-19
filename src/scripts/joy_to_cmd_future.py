@@ -11,7 +11,7 @@ current_velocity = 0.0  # Store the current velocity based on button presses
 manual_control = True  # Track if joystick manual control is active
 
 def joy_callback(data):
-    global toggle_state, last_button_state, current_velocity, manual_control
+    global toggle_state, last_button_state, current_velocity, manual_control, axes_7, twist
     """
     Callback function to handle incoming joystick data.
     Converts joystick input into a Twist message.
@@ -46,10 +46,12 @@ def joy_callback(data):
     
     # If manual control is active, use joystick axes for control
     if manual_control:
+        axes_7 = data.axes[7]
         # Map joystick axes to linear and angular velocities
         if data.axes[7] != 0:  # Check if the forward/backward button is pressed
             twist.linear.x = data.axes[7]  # Use axes[7] for primary movement
-            rospy.loginfo("Axes[7]")
+            # rospy.Timer(rospy.Duration(0.1),print_info)
+            rospy.Timer(rospy.Duration(0.1),publish_command)
         else:
             twist.linear.x = data.axes[4]  # Otherwise use axes[4] for control
             rospy.loginfo("Axes[4]")
@@ -66,12 +68,24 @@ def joy_callback(data):
         twist.angular.z = 0  # Set angular velocity to zero when in button control mode
 
     # Publish the Twist message to the /cmd_vel topic
-    cmd_vel_pub.publish(twist)
+    # rospy.Timer(rospy.Duration(0.1),cmd_vel_pub.publish(twist))
     
+    
+    
+
+        
     # If axes are moved, re-enable manual control
     if data.axes[7] != 0 or data.axes[6] != 0 or data.axes[4] != 0 or data.axes[3] != 0:
         # rospy.loginfo("Manual control re-activated via joystick movement")
         manual_control = True
+
+def publish_command(event):
+    if axes_7 != 0:
+        cmd_vel_pub.publish(twist)
+    else:
+        twist.linear.x = 0
+        twist.angular.z = 0  # Set angular velocity to zero when in button control mode
+        cmd_vel_pub.publish(twist)
 
 def joy_to_cmd_vel():
     """
@@ -84,9 +98,9 @@ def joy_to_cmd_vel():
     global cmd_vel_pub  # Declare the cmd_vel_pub as global to be accessible in the callback
     #######################################################################################################
     ########################### Adding this part For Continuous Publishing the topic ######################
-
-    cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)  # Create a publisher for the /cmd_vel topic
-    rospy.sleep(1)
+    while not rospy.is_shutdown():
+        cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)  # Create a publisher for the /cmd_vel topic
+        rospy.sleep(1)
     ########################################################################################################
     ########################################################################################################
 

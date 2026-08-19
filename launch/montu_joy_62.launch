@@ -1,0 +1,35 @@
+<!-- montu_joy.launch -->
+<!-- Launch file for Montu vehicle - Ahmed Fouad -->
+<!-- Usage examples:
+    roslaunch montu montu_joy.launch
+    roslaunch montu montu_joy.launch dev:=1 version:=62
+-->
+
+<launch>
+<!-- Optional: start roscore if needed -->
+    <arg name="core" default="false" />
+    <node if="$(arg core)" pkg="roscore" type="roscore" name="roscore" />
+
+    <!-- Wait a moment to let roscore initialize -->
+    <param name="start_delay" value="2.0"/>
+
+
+    <!-- ========== Joystick Node ========== -->
+    <arg name="dev" default="0" />
+    <node pkg="joy" type="joy_node" name="joy_node" output="screen" respawn="true">
+        <param name="dev" value="/dev/input/js$(arg dev)" />
+        <!-- Optional deadzone and autorepeat tuning -->
+        <param name="deadzone" value="0.05" />
+        <param name="autorepeat_rate" value="10" />
+    </node>
+
+
+    <!-- ========== Joy to cmd_vel Node ========== -->
+    <arg name="joy_to_cmd" default="63" />
+    <node pkg="montu" type="joy_to_cmd_$(arg joy_to_cmd).py" name="joy_to_cmd" output="screen" respawn="true">
+        <param name="use_sim_time" value="false"/>
+    </node>
+
+
+
+</launch>

@@ -90,6 +90,7 @@ def write_data_to_file_and_publish(event=None):
                 # Publish RPM values
                 rpm_right_read_pub.publish(rpm_right_read)
                 rpm_left_read_pub.publish(rpm_left_read)
+                
             
             except ValueError:
                 rospy.logerr("Error converting RPM values to integers")
@@ -111,7 +112,8 @@ def write_data_to_file_and_publish(event=None):
                     # Write the header line if the file is empty
                     file.write("rpm_right,rpm_left,current_right,current_left,power_right,power_left\n")
                 file.write(packet)
-        except Exception as e:src/scripts/drive_UGV_dual_serial_read_power_3.py
+        except Exception as e:
+            rospy.loginfo(f"an error occured: {e}")
     else:
         rospy.logwarn("No power data received")
         return None  # Return None if no data was received
@@ -155,43 +157,22 @@ def callback(msg):
         # Turning Left
         rpm_left = forward_rpm - angular_rpm if forward_rpm - angular_rpm > -MAX_RPM else -MAX_RPM # Right motor remains at full RPM
         rpm_right = min(forward_rpm + angular_rpm, MAX_RPM)  # Decrease RPM of the left motor
-        rospy.loginfo("Turning Left")
-        status_msg = "Turning Left"
+        # rospy.loginfo("Turning Left")
+        # status_msg = "Turning Left"
     elif angular_velocity < 0:
         # Turning Right
         rpm_left = min(forward_rpm + angular_rpm, MAX_RPM) # Left motor remains at full RPM
         rpm_right = forward_rpm - angular_rpm if forward_rpm - angular_rpm > -MAX_RPM else -MAX_RPM # Right decreases it's rpm
-        rospy.loginfo("Turning Right")
-        status_msg = "Turning Right"
+        # rospy.loginfo("Turning Right")
+        # status_msg = "Turning Right"
     else:
         # Moving straight
         rpm_right = forward_rpm
         rpm_left = forward_rpm
-        rospy.loginfo("Moving Forward")
-        status_msg = "Moving Forward"
-        
-        # difference = rpm_right_read > rpm_left_read
-        # if difference:
-        #     rpm_left = (MAX_RPM*rpm_left_read) / rpm_right_read
-            
-    
-    if rpm_left < 0 and rpm_right < 0:
-        rospy.loginfo("Moving Backward")
-        status_msg = "Moving Backward"
-    
-    if rpm_left == 0 and rpm_right == 0:
-        rospy.loginfo("Stopped")
-        status_msg = "Stopped"
-    
+
     # Converting Readings from 0 to 1000
     driver_speed[0] = round(((rpm_right + MAX_RPM) * 900/MAX_RPM) - 900)
     driver_speed[1] = round(((rpm_left + MAX_RPM) * 1000/MAX_RPM) - 1000)
-    
-    # This for preventing Skid Steering
-    # if driver_speed[0] < 0 and driver_speed[1] > 0:
-    #     driver_speed[0] = 0
-    # if driver_speed[1] < 0 and driver_speed[0] > 0:
-    #     driver_speed[1] = 0
     
     string_1 = '!VAR 1 ' + str(driver_speed[0]) + '\r'
     string_3 = '!VAR 3 ' + str(driver_speed[1]) + '\r'
@@ -206,7 +187,8 @@ def callback(msg):
         motor_write('!VAR 1 0\r')
         motor_write('!VAR 3 0\r')
     
-    status_pub.publish(status_msg)
+    # status_pub.publish(status_msg)
+    
     # Call write_data_to_file_and_publish continuously while joystick is pressed
     if msg.linear.x or msg.angular.z:
         write_data_to_file_and_publish()  # No argument needed
@@ -243,10 +225,12 @@ if __name__ == '__main__':
         start_time = datetime.now()
         rospy.loginfo('Start')
         
-        rospy.Subscriber("/cmd_vel", Twist, callback) # Subscribe to /cmd_vel
-        status_pub = rospy.Publisher('/status', String, queue_size=10)  # Create a publisher for /status
-        rpm_right_read_pub = rospy.Publisher('/rpm_right_read', Int32, queue_size=10)
-        rpm_left_read_pub = rospy.Publisher('/rpm_left_read', Int32, queue_size=10)
+        while not rospy.is_shutdown():
+            rospy.Subscriber("/cmd_vel", Twist, callback) # Subscribe to /cmd_vel
+            status_pub = rospy.Publisher('/status', String, queue_size=10)  # Create a publisher for /status
+            rpm_right_read_pub = rospy.Publisher('/rpm_right_read', Int32, queue_size=10)
+            rpm_left_read_pub = rospy.Publisher('/rpm_left_read', Int32, queue_size=10)
+            rospy.sleep(0.1)
         
         # Timer to call the function at regular intervals
         # rospy.Timer(rospy.Duration(0.1), write_data_to_file_and_publish)
